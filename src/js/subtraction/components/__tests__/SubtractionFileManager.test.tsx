@@ -71,7 +71,9 @@ describe("<SubtractionFileManager />", () => {
 
         const mockUploadRequested = vi.fn();
         const reducer = (state, action) => {
-            if (action.type === UPLOAD.REQUESTED) mockUploadRequested(action.payload.file);
+            if (action.type === UPLOAD.REQUESTED) {
+                mockUploadRequested(action.payload.file);
+            }
             return state;
         };
 

@@ -20,7 +20,9 @@ const StyledAddSequenceLink = styled(Link)`
 export const AddSequenceLink = ({ canModify, dataType, hasUnreferencedTargets, hasTargets }) => {
     if (canModify) {
         if (dataType === "barcode") {
-            if (!hasTargets) return null;
+            if (!hasTargets) {
+                return null;
+            }
 
             if (!hasUnreferencedTargets) {
                 return (
