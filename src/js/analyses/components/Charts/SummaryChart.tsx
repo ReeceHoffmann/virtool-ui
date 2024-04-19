@@ -35,7 +35,7 @@ function summaryPlot(element, data, length, yMax, untrustworthyRanges) {
                 .attr("y", 0)
                 .attr("width", x(range[1]) - x(range[0]))
                 .attr("height", height)
-                .attr("fill", theme.color.blue)
+                .attr("fill", theme.color.grey)
                 .attr("opacity", 0.15);
         });
     }
@@ -69,8 +69,8 @@ type StyledIimiCoverageChartProps = {
 const StyledIimiCoverageChart = styled.div<StyledIimiCoverageChartProps>`
     display: flex;
     margin-top: 5px;
-    min-width: 200px;
-    width: auto;
+    //min-width: 200px;
+    //width: auto;
     flex-grow: 1;
 
     :not(:first-child) {

@@ -1,3 +1,4 @@
+import { SummaryChart } from "@/analyses/components/Charts/SummaryChart";
 import { FormattedPathoscopeHit } from "@/analyses/types";
 import { getColor } from "@app/theme";
 import { AccordionTrigger } from "@base";
@@ -5,9 +6,9 @@ import { AccordionContent } from "@base/accordion/AccordionContent";
 import { ScrollingAccordionItem } from "@base/accordion/ScrollingAccordionItem";
 import { useUrlSearchParams } from "@utils/hooks";
 import { toScientificNotation } from "@utils/utils";
+import { map } from "lodash-es/lodash";
 import React from "react";
 import styled from "styled-components";
-import { OTUCoverage } from "./OTUCoverage";
 import { PathoscopeDetail } from "./PathoscopeDetail";
 
 const PathoscopeItemHeader = styled.h3`
@@ -60,11 +61,23 @@ const PathoscopeItemTitle = styled.div`
         padding-top: 5px;
     }
 `;
+
 const PathoscopeAccordionTrigger = styled(AccordionTrigger)`
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    width: 100%;
+
+    & > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+`;
+
+const PathoscopeOverviewCharts = styled.div`
+    display: flex;
+    overflow: hidden;
 
     & > div {
         display: flex;
@@ -83,10 +96,14 @@ type PathoscopeItemProps = {
 
 /** Results for a single pathoscope analysis hit  */
 export function PathoscopeItem({ mappedCount, hit }: PathoscopeItemProps) {
-    const { abbreviation, coverage, depth, filled, name, pi, id } = hit;
+    const { abbreviation, coverage, depth, filled, name, pi, id, maxDepth } = hit;
     const [showReads] = useUrlSearchParams<boolean>("reads");
 
     const piValue = showReads ? Math.round(pi * mappedCount) : toScientificNotation(pi);
+
+    const charts = map(filled, data => {
+        return <SummaryChart data={data} id={id} key={id} untrustworthyRanges={[]} yMax={maxDepth} />;
+    });
 
     return (
         <ScrollingAccordionItem value={id}>
@@ -102,8 +119,7 @@ export function PathoscopeItem({ mappedCount, hit }: PathoscopeItemProps) {
                         <PathoscopeItemValue color="blue" label="COVERAGE" value={coverage.toFixed(3)} />
                     </PathoscopeItemValues>
                 </PathoscopeItemHeader>
-
-                <OTUCoverage filled={filled} />
+                <PathoscopeOverviewCharts>{charts}</PathoscopeOverviewCharts>
             </PathoscopeAccordionTrigger>
             <AccordionContent>
                 <PathoscopeDetail hit={hit} mappedCount={mappedCount} />

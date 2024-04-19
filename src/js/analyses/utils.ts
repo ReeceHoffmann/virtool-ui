@@ -3,6 +3,7 @@ import {
     fill,
     filter,
     flatMap,
+    forEach,
     fromPairs,
     has,
     includes,
@@ -14,7 +15,6 @@ import {
     minBy,
     reject,
     sortBy,
-    startsWith,
     sumBy,
     toNumber,
     uniq,
@@ -22,7 +22,15 @@ import {
 } from "lodash-es";
 import { cloneDeep } from "lodash-es/lodash";
 import { formatIsolateName } from "../utils/utils";
-import { PositionMappedReadDepths, UntrustworthyRange } from "./types";
+import {
+    Analysis,
+    FormattedPathoscopeAnalysis,
+    FormattedPathoscopeIsolate,
+    PathoscopeAnalysis,
+    PositionMappedReadDepths,
+    UntrustworthyRange,
+    Workflows,
+} from "./types";
 
 export const calculateAnnotatedOrfCount = orfs => filter(orfs, orf => orf.hits.length).length;
 
@@ -153,7 +161,7 @@ export const formatNuVsData = detail => {
  * @param values - an array of numbers
  * @returns {number|*} - the median
  */
-export const median = values => {
+export function median(values) {
     const sorted = values.slice().sort((a, b) => a - b);
 
     const midIndex = (sorted.length - 1) / 2;
@@ -166,7 +174,7 @@ export const median = values => {
     const upperIndex = Math.ceil(midIndex);
 
     return Math.round((sorted[lowerIndex] + sorted[upperIndex]) / 2);
-};
+}
 
 /**
  * Merge the coverage arrays for the given isolates. This is used to render a representative coverage chart for the
@@ -175,11 +183,21 @@ export const median = values => {
  * @param isolates
  * @returns {Array}
  */
-export const mergeCoverage = isolates => {
-    const longest = maxBy(isolates, isolate => isolate.filled.length);
-    const coverages = map(isolates, isolate => isolate.filled);
-    return map(longest.filled, (depth, index) => max(map(coverages, coverage => coverage[index])));
-};
+export function mergeCoverage(isolates: FormattedPathoscopeIsolate[]) {
+    const sequences = [];
+
+    forEach(isolates, isolate => {
+        forEach(isolate.sequences, (sequence, index) => {
+            if (!sequences[index]) {
+                sequences[index] = [];
+            }
+
+            sequences[index].push(sequence.filled);
+        });
+    });
+
+    return map(sequences, maxSequences);
+}
 
 export const formatSequence = (sequence, readCount) => ({
     ...sequence,
@@ -187,12 +205,12 @@ export const formatSequence = (sequence, readCount) => ({
     reads: sequence.pi * readCount,
 });
 
-export const formatPathoscopeData = detail => {
+export function formatPathoscopeData(detail: PathoscopeAnalysis): FormattedPathoscopeAnalysis {
     if (detail.results.hits.length === 0) {
         return detail;
     }
 
-    const { cache, created_at, results, id, index, ready, reference, subtractions, user, workflow } = detail;
+    const { created_at, results, id, index, ready, reference, subtractions, user, workflow } = detail;
 
     const readCount = results.read_count;
 
@@ -212,10 +230,12 @@ export const formatPathoscopeData = detail => {
                 "length",
             );
 
-            const filled = flatMap(sequences, "filled");
+            const filled = map(sequences, "filled");
+
+            const combinedFill = flatMap(filled, fill => fill);
 
             // Coverage is the number of non-zero depth positions divided by the total number of positions.
-            const coverage = compact(filled).length / filled.length;
+            const coverage = compact(combinedFill).length / combinedFill.length;
 
             return {
                 ...isolate,
@@ -223,9 +243,9 @@ export const formatPathoscopeData = detail => {
                 filled,
                 coverage,
                 sequences,
-                maxDepth: max(filled),
+                maxDepth: max(combinedFill),
                 pi: sumBy(sequences, "pi"),
-                depth: median(filled),
+                depth: median(combinedFill),
             };
         });
 
@@ -238,7 +258,7 @@ export const formatPathoscopeData = detail => {
             pi,
             isolates: sortBy(isolates, "coverage").reverse(),
             coverage: maxBy(isolates, "coverage").coverage,
-            depth: median(filled),
+            depth: median(flatMap(filled)),
             isolateNames: reject(uniq(isolateNames), "Unnamed Isolate"),
             maxGenomeLength: maxBy(isolates, "filled.length").length,
             maxDepth: maxBy(isolates, "maxDepth").maxDepth,
@@ -247,7 +267,6 @@ export const formatPathoscopeData = detail => {
     });
 
     return {
-        cache,
         created_at,
         id,
         index,
@@ -262,7 +281,7 @@ export const formatPathoscopeData = detail => {
         user,
         workflow,
     };
-};
+}
 
 export const fuseSearchKeys = {
     pathoscope_bowtie: ["name", "abbreviation"],
@@ -270,21 +289,21 @@ export const fuseSearchKeys = {
     aodp: ["name"],
 };
 
-export const formatData = detail => {
-    if (startsWith(detail?.workflow, "pathoscope")) {
+export function formatData(detail: Analysis) {
+    if (detail?.workflow === Workflows.pathoscope || detail?.workflow === Workflows.pathoscope_bowtie) {
         return formatPathoscopeData(detail);
     }
 
-    if (detail?.workflow === "nuvs") {
+    if (detail?.workflow === Workflows.nuvs) {
         return formatNuVsData(detail);
     }
 
-    if (detail?.workflow === "aodp") {
+    if (detail?.workflow === Workflows.aodp) {
         return formatAODPData(detail);
     }
 
     return detail;
-};
+}
 
 const supportedWorkflows = ["pathoscope_bowtie", "nuvs", "aodp", "iimi"];
 
@@ -314,7 +333,7 @@ export function convertRleToCoverage(lengths: Array<number>, rle: Array<number>)
 }
 
 /**
- * Average the read depths of an array of sequences.
+ * Create a combined sequence using the max read depth for each position.
  *
  * @param sequences - the sequences to average
  * @returns An averaged sequence

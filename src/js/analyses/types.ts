@@ -67,54 +67,74 @@ export type GenericAnalysis = AnalysisMinimal & {
 
 export type Analysis = FormattedPathoscopeAnalysis | IimiAnalysis | GenericAnalysis;
 
-export type FormattedPathoscopeAnalysis = AnalysisMinimal & {
+export type PathoscopeAnalysis = AnalysisMinimal & {
     files: Array<AnalysisFile>;
-    results: FormattedPathoscopeResults;
-    workflow: Workflows.pathoscope_bowtie;
+    results: PathoscopeResults;
+    workflow: Workflows.pathoscope_bowtie | Workflows.pathoscope;
 };
 
-/** All results for a pathoscope analysis*/
-export type FormattedPathoscopeResults = {
-    hits: FormattedPathoscopeHit[];
+export type FormattedPathoscopeAnalysis = PathoscopeAnalysis & {
+    results: FormattedPathoscopeResults;
+};
+
+export type PathoscopeResults = {
+    hits: PathoscopeHit[];
     /** The total number of reads mapped to the reference during the analysis*/
     read_count: number;
     /** The number of reads that were mapped to subtractions*/
     subtracted_count: number;
 };
 
+/** All results for a pathoscope analysis*/
+export type FormattedPathoscopeResults = {
+    readCount: number;
+    subtractedCount: number;
+    hits: FormattedPathoscopeHit[];
+};
+
 /** Mapping data for a single pathoscope hit*/
-export type FormattedPathoscopeHit = {
+export type PathoscopeHit = {
     abbreviation: string;
-    /** The proportion of the sequence that has mapped read coverage*/
+    id: string;
+    isolates: FormattedPathoscopeIsolate[];
+    length: number;
+    /** The largest depth on any single reference nucleotide */
+    name: string;
+    version: number;
+};
+
+/** Formatted mapping data for a single pathoscope hit*/
+export type FormattedPathoscopeHit = PathoscopeHit & {
     coverage: number;
     /** The average depth of coverage for the sequence */
     depth: number;
     /** the position mapped depths of the reference sequence*/
     filled: PositionMappedReadDepths;
-    id: string;
     isolates: FormattedPathoscopeIsolate[];
-    length: number;
     /** The largest depth on any single reference nucleotide */
     maxDepth: number;
     maxGenomeLength: number;
-    name: string;
     /** The proportion of reads from the entire sample that match this hit */
     pi: number;
     reads: number;
-    version: number;
 };
 
 /** Mapping data for a single pathoscope reference isolate */
-export type FormattedPathoscopeIsolate = {
+export type PathoscopeIsolate = {
     default: boolean;
     id: string;
     source_name: string;
     source_type: string;
+    sequences: FormattedPathoscopeSequence[]; // fix
+};
+
+/** Formatted mapping data for a single pathoscope reference isolate */
+export type FormattedPathoscopeIsolate = PathoscopeIsolate & {
     sequences: FormattedPathoscopeSequence[];
 };
 
 /** The mapping data for a single pathoscope reference sequence*/
-export type FormattedPathoscopeSequence = {
+export type PathoscopeSequence = {
     id: string;
     /** The genebank accession number of the reference sequence */
     accession: string;
@@ -132,6 +152,12 @@ export type FormattedPathoscopeSequence = {
     reads: number;
 };
 
+/** Formatted mapping data for a single pathoscope reference sequence */
+export type FormattedPathoscopeSequence = PathoscopeSequence & {
+    filled: PositionMappedReadDepths;
+    reads: number;
+};
+
 /** Analysis search results from the API */
 export type AnalysisSearchResult = SearchResult & {
     documents: Array<AnalysisMinimal>;
@@ -139,6 +165,7 @@ export type AnalysisSearchResult = SearchResult & {
 
 export enum Workflows {
     pathoscope_bowtie = "pathoscope_bowtie",
+    pathoscope = "pathoscope",
     nuvs = "nuvs",
     iimi = "iimi",
     aodp = "aodp",
