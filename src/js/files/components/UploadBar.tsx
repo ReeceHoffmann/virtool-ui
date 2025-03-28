@@ -41,8 +41,8 @@ export function UploadBar({
         [onDrop],
     );
 
-    function validator(file: File): FileError {
-        if (regex && !regex.test(file.name)) {
+    function validator(upload: File | DataTransferItem): FileError {
+        if (regex && "name" in upload && !regex.test(upload.name)) {
             return {
                 code: "file-invalid-type",
                 message: "Invalid file type",
@@ -114,7 +114,7 @@ export function UploadBar({
             </div>
             <div className="font-medium h-6 mt-4 text-red-600 text-sm">
                 {fileRejections.length > 0 &&
-                    `Invalid file names: ${fileRejections.map(({ file }) => file.name).join(", ")}`}
+                    `Invalid file type: ${fileRejections.map(({ file }) => file.name).join(", ")}`}
             </div>
         </div>
     );
