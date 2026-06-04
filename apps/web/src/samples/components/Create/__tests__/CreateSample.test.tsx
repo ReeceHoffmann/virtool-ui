@@ -155,7 +155,7 @@ describe("<CreateSample>", () => {
 	});
 
 	it("should be able to autofill the sample name", async () => {
-		const file = createFakeFile({ name: "14T81.fq.gz" });
+		const file = createFakeFile({ name: "26HT068_S24_R1_001.fastq.gz" });
 
 		mockApiListFiles([file]);
 		mockApiGetShortlistSubtractions([{ name: "foo", ready: true, id: "test" }]);
@@ -168,7 +168,26 @@ describe("<CreateSample>", () => {
 		await userEvent.click(screen.getByText(file.name));
 		await userEvent.click(screen.getByRole("button", { name: "Auto Fill" }));
 
-		expect(field).toHaveValue("14T81");
+		expect(field).toHaveValue("26HT068");
+	});
+
+	it("should autofill the sample name from the selected upload name", async () => {
+		const file = createFakeFile({
+			name: "sample_A_R1.fastq.gz",
+			name_on_disk: "57d1e2be-8180-4874-a7ac-281029923910",
+		});
+
+		mockApiListFiles([file]);
+		mockApiGetShortlistSubtractions([]);
+
+		await renderWithRouter(<CreateSample labels={labels} />);
+
+		const field = await screen.findByRole("textbox", { name: "Name" });
+
+		await userEvent.click(screen.getByText(file.name));
+		await userEvent.click(screen.getByRole("button", { name: "Auto Fill" }));
+
+		expect(field).toHaveValue("sample");
 	});
 
 	it("should clear selections when reset button is clicked", async () => {
